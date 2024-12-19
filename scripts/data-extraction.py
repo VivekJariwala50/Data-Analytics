@@ -11,7 +11,6 @@ df.columns = [col.split(' ', 1)[-1] for col in df.columns]
 df=df.dropna()
 pd.set_option('display.max_rows', None)
 
-# If you want to remove column limit too
 pd.set_option('display.max_columns', None)
 
 df = df.reset_index()
