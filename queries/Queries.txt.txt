@@ -1,0 +1,94 @@
+Query 1: An SQL query to calculate a 7-day moving average of the closing prices and show the date along with the moving average for each day. 
+---------------------------------------------------------------------------------------------------------------------------------
+SELECT 
+    Date,
+    [Close],
+    AVG([Close]) OVER (ORDER BY Date ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) AS moving_avg_7_day
+FROM 
+    StockData
+ORDER BY 
+    Date;
+
+-----------------------------------------------------------------------------------------------------------------------------------
+Query 2: An SQL query to find the day with the highest percentage price change (i.e., the percentage difference between the opening price and closing price) in the dataset.
+-----------------------------------------------------------------------------------------------------------------------------------
+SELECT 
+    date,
+    [Open],
+    [Close],
+    ROUND((([Close] - [Open]) / [Open]) * 100, 2) AS price_change_percentage
+FROM 
+    StockData
+ORDER BY 
+    price_change_percentage DESC;
+
+--------------------------------------------------------------------------------------------------------------------------------------
+Query 3: An SQL query to find the largest consecutive drop in the stock price (comparing the closing price on one day with the close of the previous day) and show the start and end date of that drop.
+--------------------------------------------------------------------------------------------------------------------------------------
+WITH Price_Diffs AS (
+    SELECT 
+        Date,
+        [Close],
+        LAG(Date) OVER (ORDER BY Date) AS prev_date,
+        LAG([Close]) OVER (ORDER BY Date) AS prev_close
+    FROM 
+        StockData
+),
+Date_Diffs AS (
+    SELECT 
+        Date,
+        [Close],
+        prev_date,
+        DATEDIFF(DAY, prev_date, Date) AS days_diff,
+        prev_close
+    FROM 
+        Price_Diffs
+    WHERE 
+        [Close] < prev_close -- Filter price drops
+)
+SELECT 
+    MIN(Date) AS start_date,
+    MAX(Date) AS end_date,
+    MIN([Close]) AS lowest_price
+FROM 
+    Date_Diffs
+GROUP BY 
+    days_diff
+ORDER BY 
+    lowest_price ASC;
+
+--------------------------------------------------------------------------------------------------------------------------
+Query 4: An SQL query to find the day with the highest price range (difference between high and low) and display the date along with the price range.
+---------------------------------------------------------------------------------------------------------------------------
+SELECT 
+    Date,
+    high,
+    low,
+    (high - low) AS price_range
+FROM 
+    stockData
+ORDER BY 
+    price_range DESC;
+
+------------------------------------------------------------------------------------------------------------------------------
+Query 5: An SQL query to identify days where the volume was at least 2x higher than the average volume for the past 30 days and the percentage price change was more than 5%.
+-------------------------------------------------------------------------------------------------------------------------------
+WITH Avg_Volume AS (
+    SELECT 
+        AVG(volume) AS avg_volume
+    FROM 
+        stockData
+    WHERE 
+        CAST(Date AS DATE) BETWEEN DATEADD(DAY, -30, GETDATE()) AND GETDATE()
+)
+SELECT 
+    Date,
+    Volume,
+    (([Close] - [Open]) / [Open]) * 100 AS price_change_percentage
+FROM 
+    stockData, Avg_Volume
+WHERE 
+    Volume > (2 * avg_volume)
+    AND ABS((([Close] - [Open]) / [Open]) * 100) > 5
+ORDER BY 
+    Volume DESC;
